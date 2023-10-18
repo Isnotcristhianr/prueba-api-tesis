@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráfico de Radiación UV</title>
+    <!-- Agrega los enlaces a las bibliotecas de Chart.js aquí -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Asegúrate de incluir jQuery si estás usando $.ajax -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+<body>
+    <div style="width:80%;margin:auto;">
+        <canvas id="chart_rad"></canvas>
+    </div>
+
+    <script>
+        var ctx_rad = document.getElementById('chart_rad').getContext('2d');
+        var chart_rad = new Chart(ctx_rad, {
+            type: 'line',
+            data: {
+                labels: [], // Los valores de las etiquetas se llenarán dinámicamente
+                datasets: [{
+                    label: 'Radiación Solar (Máxima)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    data: [], // Los valores de los datos se llenarán dinámicamente
+                    fill: false
+                }, {
+                    label: 'Radiación Solar (Promedio)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    data: [], // Los valores de los datos se llenarán dinámicamente
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        var getData = function () {
+            var currentdate = new Date();
+            var fechas = "";
+            fechas += currentdate.getFullYear().toString() + ":" + (currentdate.getMonth() + 1).toString() + ":" +
+                currentdate.getDate().toString() + ":" + currentdate.getHours().toString() + ":" +
+                currentdate.getMinutes().toString() + "/";
+            fechas += fechas;
+
+            var app = "130937";
+            $.ajax({
+                url: "http://172.16.19.152:3000/datosEstaciones2/temp/" + fechas + app,
+                success: function (data) {
+                    $.each(data.data, function (index, value) {
+                        var date = new Date(value.timestamp * 1000);
+                        var hours = date.getHours();
+                        var minutes = "0" + date.getMinutes();
+
+                        chart_rad.data.labels.push(hours + ':' + minutes.substr(-2));
+
+                        // Radiación Solar
+                        chart_rad.data.datasets[0].data.push(value.avg_solar_rad_hi.toFixed(1));
+                        chart_rad.data.datasets[1].data.push(value.avg_solar_rad_avg.toFixed(1));
+                    });
+
+                    chart_rad.update();
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    alert("Error Detalle : No se conecto a los datos");
+                }
+            });
+        };
+
+        getData();
+    </script>
+</body>
+
+</html>
